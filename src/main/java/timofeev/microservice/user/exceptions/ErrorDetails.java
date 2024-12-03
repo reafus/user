@@ -2,6 +2,8 @@ package timofeev.microservice.user.exceptions;
 
 import java.util.Date;
 
+/* Error Response */
+
 public class ErrorDetails {
 
     private Date timestamp;

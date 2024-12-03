@@ -5,15 +5,15 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import timofeev.microservice.user.dto.UserDTO;
 import timofeev.microservice.user.exceptions.ResourceNotFoundException;
 import timofeev.microservice.user.model.User;
-import timofeev.microservice.user.repository.UserRepository;
 import timofeev.microservice.user.service.UserService;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -30,28 +30,32 @@ public class UserController {
     }
 
     @GetMapping("/users")
-    public List<User> getAllUsers() {
-        return userService.findAll();
+    public List<UserDTO> getAllUsers() {
+        return userService.findAll().stream().map(user -> modelMapper.map(user, UserDTO.class)).collect(Collectors.toList());
     }
 
     @GetMapping("/users/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable(value = "id") Long userId) throws ResourceNotFoundException {
+    public ResponseEntity<UserDTO> getUserById(@PathVariable(value = "id") Long userId) throws ResourceNotFoundException {
         User user = userService.findById(userId);
-        return ResponseEntity.ok().body(user);
+        UserDTO userDTO = convertToUserDTO(user);
+        return ResponseEntity.ok().body(userDTO);
     }
 
     @PostMapping("/users")
-    public User createUser(@Valid @RequestBody User user) {
-        return userService.save(user);
+    public User createUser(@Valid @RequestBody UserDTO userDTO) {
+        return userService.save(convertToUser(userDTO));
     }
 
     @PutMapping("/users/{id}")
-    public ResponseEntity<User> updateUser(
-            @PathVariable(value = "id") Long userId, @Valid @RequestBody User userToUpdate)
+    public ResponseEntity<UserDTO> updateUser(
+            @PathVariable(value = "id") Long userId, @Valid @RequestBody UserDTO userDTO)
             throws ResourceNotFoundException {
 
+        User userToUpdate = convertToUser(userDTO);
         User updatedUser = userService.updateUser(userId, userToUpdate);
-        return ResponseEntity.ok(updatedUser);
+
+        UserDTO updatedUserDTO = convertToUserDTO(updatedUser);
+        return ResponseEntity.ok(updatedUserDTO);
     }
 
     @DeleteMapping("/users/{id}")
@@ -60,5 +64,12 @@ public class UserController {
         Map<String, Boolean> response = new HashMap<>();
         response.put("deleted", Boolean.TRUE);
         return ResponseEntity.ok(response);
+    }
+
+    private User convertToUser(UserDTO userDTO) {
+        return modelMapper.map(userDTO, User.class);
+    }
+    private UserDTO convertToUserDTO(User user) {
+        return modelMapper.map(user, UserDTO.class);
     }
 }
